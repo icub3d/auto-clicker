@@ -1,6 +1,7 @@
 import pyautogui
 import tkinter
 import time
+import random
 import threading
 
 class AutoClicker:
@@ -10,7 +11,6 @@ class AutoClicker:
         self.msg = tkinter.StringVar()
         self.scale = tkinter.IntVar()
         self.time = tkinter.StringVar()
-        self.countdown = 5
         self.go = False
         
     def scale_changed(self, to):
@@ -41,13 +41,7 @@ class AutoClicker:
 
         self.root.mainloop()
 
-    def pre(self):
-        self.countdown = self.countdown - 1
-        
-        t = threading.Timer(1.0, self.pre)
-        
     def stop(self):
-        self.b.configure(text="Start", command=self.start)
         self.go = False
         
         
@@ -56,24 +50,29 @@ class AutoClicker:
         self.go = True
         threading.Thread(target=self.clicker).start()
 
-
     def clicker(self):
         countdown = 5
         clicks = 0
+
         while self.go and countdown > 0:
             self.time.set("starting in {}".format(countdown))
             time.sleep(1)
             countdown -= 1
-        while self.go:
+            
+        start = time.time()
+        while self.go and time.time() - start < self.scale.get() * 60:
             pyautogui.click()
             clicks += 1
-            self.time.set("clicks: {}".format(clicks))
-            time.sleep(1)            
+            when = 0.5 + random.uniform(0.0, 0.2)
+            self.time.set("clicks: {} (next: {})".format(clicks, when))
+            time.sleep(when)
         self.time.set("Click start to begin!")
+        self.b.configure(text="Start", command=self.start)
 
 def main():
     ac = AutoClicker()
     ac.ui()
     
 if __name__ == "__main__":
+    random.seed()
     main()
