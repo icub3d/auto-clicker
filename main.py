@@ -1,6 +1,7 @@
 import pyautogui
 import tkinter
 import time
+import datetime
 import random
 import threading
 
@@ -18,7 +19,7 @@ class AutoClicker:
 
     def ui(self):
         self.root.title("Auto Clicker")
-        self.root.geometry("500x160")
+        self.root.geometry("500x500")
         self.scale.set(5)
         self.scale_changed(5)
         m = tkinter.Message(self.root, width=500,
@@ -26,7 +27,7 @@ class AutoClicker:
         m.pack()
 
 
-        s = tkinter.Scale(self.root, from_=1, to=10, variable=self.scale,
+        s = tkinter.Scale(self.root, from_=1, to=60, variable=self.scale,
                           orient=tkinter.HORIZONTAL, length=500,
                           command=self.scale_changed)
         s.pack()
@@ -63,8 +64,9 @@ class AutoClicker:
         while self.go and time.time() - start < self.scale.get() * 60:
             pyautogui.click()
             clicks += 1
-            when = 0.5 + random.uniform(0.0, 0.2)
-            self.time.set("clicks: {} (next: {})".format(clicks, when))
+            when = 0.6 + random.uniform(0.0, 0.2)
+            self.time.set("clicks: {} (next: {:.3f}) (duration: {})".
+                format(clicks, when, datetime.timedelta(seconds=time.time()-start)))
             time.sleep(when)
         self.time.set("Click start to begin!")
         self.b.configure(text="Start", command=self.start)
