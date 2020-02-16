@@ -1,19 +1,53 @@
-import pyautogui
 import tkinter
 import time
 import datetime
 import random
 import threading
 
+import pyautogui
+import pynput
+
+class Timer:
+    def __init__(self, scale):
+        self.running = False
+        self.clicks = 0
+        self.scale = scale
+        self.start = time.time()
+
+    def run(self):
+        self.running = True
+        countdown = 5
+        while self.running and countdown > 0:
+            yield {
+                "countdown": countdown,
+                "clicks": self.clicks,
+                "next": "",
+                "duration": "",
+            }
+            time.sleep(1)
+            countdown -= 1
+
+        while self.running and time.time() - self.start < self.scale * 60:
+            pyautogui.click()
+            self.clicks += 1
+            when = 0.6 + random.uniform(0.0, 0.2)
+            yield {
+                "countdown": countdown,
+                "clicks": self.clicks,
+                "next": "{:0.3f}".format(when),
+                "duration": datetime.timedelta(seconds=time.time()-self.start),
+            }
+            time.sleep(when)
+
 class AutoClicker:
     def __init__(self):
         self.root = tkinter.Tk()
-        self.msgTemplate = "Hello! This will simulate clicking the left mouse button. Once you click start, it will count down for 5 seconds and then click the left mouse button for {} minute."
+        self.msgTemplate = "Hello! This will simulate clicking the left mouse button. Once you click start, it will count down for 5 seconds and then click the left mouse button for {} minutes."
         self.msg = tkinter.StringVar()
         self.scale = tkinter.IntVar()
         self.time = tkinter.StringVar()
-        self.go = False
-        
+        pynput.keyboard.Listener(on_release=self.keys).start()
+
     def scale_changed(self, to):
         self.msg.set(self.msgTemplate.format(self.scale.get()))
 
@@ -36,40 +70,51 @@ class AutoClicker:
         self.b = tkinter.Button(self.root, text="Start", command=self.start)
         self.b.pack()
 
+        self.p = tkinter.Button(self.root, text="Pause", command=self.pause)
+        self.p.pack()
+
         self.time.set("Click start to begin!")
         l = tkinter.Label(self.root, width=500, textvariable=self.time)
         l.pack()
 
         self.root.mainloop()
 
+    def pause(self):
+        self.go = False
+        self.p.configure(text="Unpause", command=self.unpause)
+
+    def unpause(self):
+        self.go = True
+        self.p.configure(text="Pause", command=self.pause)
+        threading.Thread(target=self.clicker).start()
+        
     def stop(self):
         self.go = False
-        
-        
+        self.time.set("Click start to begin!")
+        self.b.configure(text="Start", command=self.start)
+
     def start(self):
         self.b.configure(text="Stop", command=self.stop)
         self.go = True
+        self.t = Timer(self.scale.get())
         threading.Thread(target=self.clicker).start()
 
+    def keys(self, key):
+        if key == pynput.keyboard.Key.esc and self.go:
+            self.pause()
+        
     def clicker(self):
-        countdown = 5
-        clicks = 0
+        for msg in self.t.run():
+            if msg["countdown"] > 0:
+                self.time.set("starting in {}".format(msg["countdown"]))
+            else:
+                self.time.set("clicks: {} (next: {}) (duration: {})".
+                              format(msg["clicks"], msg["next"], msg["duration"]))
 
-        while self.go and countdown > 0:
-            self.time.set("starting in {}".format(countdown))
-            time.sleep(1)
-            countdown -= 1
-            
-        start = time.time()
-        while self.go and time.time() - start < self.scale.get() * 60:
-            pyautogui.click()
-            clicks += 1
-            when = 0.6 + random.uniform(0.0, 0.2)
-            self.time.set("clicks: {} (next: {:.3f}) (duration: {})".
-                format(clicks, when, datetime.timedelta(seconds=time.time()-start)))
-            time.sleep(when)
-        self.time.set("Click start to begin!")
-        self.b.configure(text="Start", command=self.start)
+            if not self.go:
+                return
+        self.stop()
+                              
 
 def main():
     ac = AutoClicker()
