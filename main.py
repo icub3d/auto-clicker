@@ -46,7 +46,19 @@ class AutoClicker:
         self.msg = tkinter.StringVar()
         self.scale = tkinter.IntVar()
         self.time = tkinter.StringVar()
-        pynput.keyboard.Listener(on_release=self.keys).start()
+
+        hotkey = pynput.keyboard.HotKey(
+            pynput.keyboard.HotKey.parse('<ctrl>+<alt>+h'),
+            self.pause)
+
+        self.l = pynput.keyboard.Listener(
+            on_release = self.for_canonical(hotkey.release),
+            on_press   = self.for_canonical(hotkey.press),
+        )
+        self.l.start()
+
+    def for_canonical(self, f):
+        return lambda k: f(self.l.canonical(k))
 
     def scale_changed(self, to):
         self.msg.set(self.msgTemplate.format(self.scale.get()))
