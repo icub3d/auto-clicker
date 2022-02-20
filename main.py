@@ -9,12 +9,13 @@ import pynput
 
 
 class Timer:
-    def __init__(self, scale, button, forever):
+    def __init__(self, scale, button, forever, frequency):
         self.running = False
         self.clicks = 0
         self.scale = scale
         self.button = button
         self.forever = forever
+        self.frequency = frequency
         self.start = time.time()
 
     def run(self):
@@ -39,7 +40,7 @@ class Timer:
                 pyautogui.press(self.button)
 
             self.clicks += 1
-            when = 0.6 + random.uniform(0.0, 0.2)
+            when = self.frequency + random.uniform(0.0, 0.2)
             yield {
                 "countdown": countdown,
                 "clicks": self.clicks,
@@ -53,6 +54,7 @@ class AutoClicker:
     def __init__(self):
         self.root = tkinter.Tk()
         self.scale = tkinter.IntVar()
+        self.frequency = tkinter.DoubleVar()
         self.time = tkinter.StringVar()
 
         hotkey = pynput.keyboard.HotKey(
@@ -70,7 +72,7 @@ class AutoClicker:
 
     def ui(self):
         self.root.title("Auto Clicker")
-        self.scale.set(5)
+        self.scale.set(6)
 
         self.b = tkinter.Button(self.root, text="Start", command=self.start)
         self.b.grid(row=0, column=0)
@@ -95,6 +97,10 @@ class AutoClicker:
         self.s = tkinter.Scale(self.root, from_=1, to=60, variable=self.scale,
                                orient=tkinter.HORIZONTAL)
         self.s.grid(row=5, column=0, columnspan=2)
+
+        self.f = tkinter.Scale(self.root, from_=0, to=1, variable=self.frequency, resolution=0.1,
+                               orient=tkinter.HORIZONTAL)
+        self.f.grid(row=6, column=0, columnspan=2)
 
         self.root.mainloop()
 
@@ -123,7 +129,7 @@ class AutoClicker:
         self.b.configure(text="Stop", command=self.stop)
         self.go = True
         self.t = Timer(self.scale.get(), self.key.get(),
-                       self.forever.get() == 1)
+                       self.forever.get() == 1, self.frequency.get())
         threading.Thread(target=self.clicker).start()
 
     def keys(self, key):
